@@ -18,7 +18,8 @@ public class main {
 			switch (input) {
 			    case 1:
 			    	SJF sjf = new SJF();
-			    	sjf.SJFGUI();
+			    	int mat[][] = new int[4][6];
+			    	sjf.SJFGUI(4,mat);
 			    	break;
 			    case 2:
 			    	ArrayList<Integer> x1 = new ArrayList<Integer>();
@@ -37,7 +38,7 @@ public class main {
 					System.out.println("Invalid Input");
 					break;
 			}
-			for (int i = 0; i < 13; i++) System.out.println();
+			
 		
 	}
 }
