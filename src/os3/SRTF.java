@@ -113,7 +113,7 @@ public class SRTF {
 	    for (int r = 0; r < num; r++)
 	        mat[r][3] = wt[r]; 
 	   
-	    contextswitching(x,mat, num);
+	 //   contextswitching(x,mat, num);
 	    
 	    
 	}
