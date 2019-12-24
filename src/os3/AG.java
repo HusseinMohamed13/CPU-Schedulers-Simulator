@@ -58,33 +58,70 @@ public class AG {
 		int q=0;
 		QProcess p = new QProcess();
 		QProcess runningprocess = null;
-		for (int i = 0; i < End; i++) {
-			//history of quantm every time
-			
-     
-            //check for remaining time
-			if(runningprocess!=null&&runningprocess.burst==0) {
-               if(readyqueue.size()>=1) {
+		int i=0;
+		while(End>0) {
+			//load processes at point of time to queue
+			for (int x = 0; x < processes.size(); x++) {
+				if(processes.get(x).arrival==i) {
+				  processes.get(x).remaining = i;
+		          readyqueue.add(processes.get(x));
+		          processes.remove(x);
+				}
+			}
+			//////////////////////////////
+			if(runningprocess==null){
+				if(readyqueue.size()>=1) {
+				    //check for small agfactor
+				    int min=readyqueue.get(0).agfactor,indx = 0;
+					for (int x = 0; x < readyqueue.size(); x++) {
+						if(readyqueue.get(x).agfactor<min) {
+							min = readyqueue.get(x).agfactor;
+							indx = x;
+						}
+					}
+					runningprocess=readyqueue.get(indx);
+					readyqueue.remove(indx);
+					runningprocess.waitingTime += Math.abs(runningprocess.remaining - i);
+					runningprocess.turnAround += Math.abs(runningprocess.remaining - i);
+			 	    q = runningprocess.quantum;
+					printhistory(original);
+					System.out.print(runningprocess.name+" running");
+		            System.out.println();
+			    }
+		    }
+			//check for remaining time
+			else if(runningprocess!=null&&runningprocess.burst==0) {
+				   if(readyqueue.size()>=1) {
+						p = readyqueue.get(0);	
+						readyqueue.remove(0);
             	   for(int x=0;x<original.size();x++) {
 						if(original.get(x).name.equals(runningprocess.name)) {
 							original.get(x).quantum = 0;
 						}
 				   }	
-            	   runningprocess = readyqueue.get(0);
-            	 //updating waiting time & turnaround
+            	   runningprocess = p;
+            	   //updating waiting time & turnaround
             	   runningprocess.waitingTime += Math.abs(runningprocess.remaining - i);
-					runningprocess.turnAround += Math.abs(runningprocess.remaining - i);
+				   runningprocess.turnAround += Math.abs(runningprocess.remaining - i);
             	   q = runningprocess.quantum;  
-            	   readyqueue.remove(0);
             	   //printing history
             	   printhistory(original);
             	   System.out.print(runningprocess.name+" running");
                    System.out.println();
-               }				
+                 }else {
+                	 runningprocess=null;
+                	 i++;
+                 }
+                   
 			}
 	        //check for quantm first case
-			if(q==0&&runningprocess!=null) {
+			else if(q==0&&runningprocess!=null) {
 				p = runningprocess;
+				if(readyqueue.isEmpty()){
+					readyqueue.add(runningprocess);
+					runningprocess=null;
+					i++;
+				}else{
 				runningprocess = readyqueue.get(0);
 				//updating waiting time & turnaround
 				runningprocess.waitingTime += Math.abs(runningprocess.remaining - i);
@@ -95,38 +132,16 @@ public class AG {
 					if(original.get(x).name.equals(p.name)) {
 						original.get(x).quantum=p.quantum;
 					}
-				}
+			    }
 				printhistory(original);
 				System.out.print(runningprocess.name+" running");
 	            System.out.println();
 				p.quantum+=1;
 				p.remaining = i;
 				readyqueue.add(p);
+			   }
 			}
-			//load processes at point of time to queue
-			for (int x = 0; x < processes.size(); x++) {
-				if(processes.get(x).arrival==i) {
-					processes.get(x).remaining = i;
-		          readyqueue.add(processes.get(x));
-		          processes.remove(x);
-				}
-			}
-			
-			//for first process enter queue
-			if(runningprocess==null) {
-			  runningprocess = readyqueue.get(0);
-			   //updating waiting time & turnaround
-			  runningprocess.waitingTime += Math.abs(runningprocess.remaining - i);
-				runningprocess.turnAround += Math.abs(runningprocess.remaining - i);
-			  readyqueue.remove(0);
-		 	  q = runningprocess.quantum;
-				printhistory(original);
-				System.out.print(runningprocess.name+" running");
-	            System.out.println();
-			}
-			
-			//find smallest agfactor
-			if(readyqueue.size()>=1) {
+			else if(readyqueue.size()>=1) {
 			int min=readyqueue.get(0).agfactor,indx = 0;
 			for (int x = 0; x < readyqueue.size(); x++) {
 				if(readyqueue.get(x).agfactor<min) {
@@ -146,6 +161,7 @@ public class AG {
 					}
 					
 					runningprocess.remaining = i;
+					readyqueue.remove(indx);
 					readyqueue.add(runningprocess);
 					runningprocess = p;
 					printhistory(original);
@@ -154,52 +170,50 @@ public class AG {
 					//updating waiting time & turnaround
 					runningprocess.waitingTime += Math.abs(runningprocess.remaining - i);
 					runningprocess.turnAround += Math.abs(runningprocess.remaining - i);
-					readyqueue.remove(indx);
 					q = runningprocess.quantum;
 				}
 			}
 			}
+			
+			if(runningprocess!=null) {
 			q--;
 			runningprocess.burst-=1;
 			Pair x = new Pair(runningprocess.name , runningprocess.waitingTime);
 			waiting_time.add(x);
-			
-			
 			order.add(runningprocess.name);
-		}
-		
-		
-			
-				
+			End--;
+			}
+			i++;
+		}		
 
 		double avgWaiting = 0.0, avgTurnaround = 0.0;
 		System.out.println("Order of Execution:");
-		for (int i = 0; i < order.size(); i++) {
-			if(i+1==order.size()) {
-				System.out.print(order.get(i));
+		for (int i1 = 0; i1 < order.size(); i1++) {
+			if(i1+1==order.size()) {
+				System.out.print(order.get(i1));
 				break;
 				}
-			if(order.get(i).equals(order.get(i+1))) {
+			if(order.get(i1).equals(order.get(i1+1))) {
 				continue;
 			}
 			else{
-			System.out.print(order.get(i));
-			if (i != order.size() - 1) System.out.print("->");
+			System.out.print(order.get(i1));
+			if (i1 != order.size() - 1) System.out.print("->");
 			}
 		}
 		System.out.println();
-		for(int i =0; i<waiting_time.size();i++)
+		for(int i1 =0; i1<waiting_time.size();i1++)
 		{
-			if(i+1==waiting_time.size())
+			if(i1+1==waiting_time.size())
 			{
-				System.out.print(waiting_time.get(i).x); System.out.print("->"); System.out.print(waiting_time.get(i).y);
+				System.out.print(waiting_time.get(i1).x); System.out.print("->"); System.out.print(waiting_time.get(i1).y);
 				System.out.println();
 				break;
 			}
-			if(waiting_time.get(i).x.equals(waiting_time.get(i+1).x))
+			if(waiting_time.get(i1).x.equals(waiting_time.get(i1+1).x))
 				continue;
 			else
-				System.out.print(waiting_time.get(i).x); System.out.print("->cummualtive waiting time_for now "); System.out.print(waiting_time.get(i).y);
+				System.out.print(waiting_time.get(i1).x); System.out.print("->cummualtive waiting time_for now "); System.out.print(waiting_time.get(i1).y);
 				System.out.println();
 		}
 		System.out.println();
